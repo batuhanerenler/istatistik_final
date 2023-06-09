@@ -1,0 +1,181 @@
+---
+title: "Deprem Hasar ve Kayıp Tahmini"
+author: 
+  - Batuhan Erenler[^1]
+bibliography: ../bibliography/biblio.bib
+csl: ../csl/apa-tr.csl
+header-includes:
+  - \usepackage{polyglossia}
+  - \setmainlanguage{turkish}
+  - \usepackage{booktabs}
+  - \usepackage{caption} 
+  - \captionsetup[table]{skip=10pt}
+output:
+  bookdown::pdf_document2:
+    citation_package: natbib
+    fig_caption: yes
+    fig_height: 3
+    fig_width: 4
+    keep_tex: no
+    latex_engine: xelatex
+    number_sections: yes
+    toc: no
+geometry: margin=1in
+link-citations: yes
+urlcolor: blue
+fontsize: 12pt
+biblio-style: apalike
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = FALSE, echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+<!-- ======================================================================= -->
+<!-- ============================== NOTLAR ================================= -->
+<!-- ======================================================================= -->
+[^1]: 19080213, [Github Repo](https://github.com/batuhanerenler/istatistik_final)
+
+
+# Giriş
+
+Depremler, dünya genelinde önemli bir doğal afet olarak kabul edilir ve büyük hasarlara ve can kayıplarına neden olabilir. Bu proje kapsamında, önceden belirlenmiş bir deprem senaryosuna göre yapılan analizlerin sonuçlarını içeren bir veri seti kullanarak, deprem hasarlarını ve kayıplarını tahmin etmeyi amaçlamaktayım.
+
+
+## Çalışmanın Amacı
+
+Veri seti, 7.5 Mw büyüklüğünde gece meydana gelecek bir deprem senaryosuna göre hazırlanmış analiz sonuçlarını içermektedir. Veri setinde, depremden etkilenecek ilçelerin ve mahallelerin isimleri, hasar görecek bina sayıları, can kaybı sayısı, yaralı sayısı, altyapı hasarları ve geçici barınma ihtiyacı gibi bilgiler bulunmaktadır. Bu veri seti, deprem hasar ve kayıplarını tahmin etmek ve böylece afet yönetimi ve müdahale stratejilerini planlamak için kullanılabilir.
+
+## Literatür 
+
+Deprem hasar ve kayıp tahminleri, literatürde birçok çalışmaya konu olmuştur. Bu projede, deprem hasar ve kayıp tahminleri ile ilgili yapılan çalışmalardan dört tanesini inceleyerek, kendi analizimi ve modelimi oluşturmayı planlıyorum.
+
+- Coburn, A. W., & Spence, R. J. (2002). Earthquake protection. John Wiley & Sons. [@coburn2002earthquake]
+
+Bu kitapta, deprem koruması ve deprem hasar tahminleri ile ilgili geniş bilgiler sunulmaktadır. Kitapta, deprem hasarının belirlenmesinde kullanılan yöntemler ve hasar tahminleri için kullanılan modeller hakkında bilgi verilmektedir.
+
+- Yücemen, M. S., & Güçlü, U. (2008). Seismic risk assessment and loss estimation for the city of Istanbul. Earthquake Engineering & Structural Dynamics, 37(6), 831-854. [@yucemen2008seismic]
+
+Bu çalışmada, İstanbul şehri için sismik risk değerlendirmesi ve hasar tahminleri yapılmıştır. Yazarlar, deprem hasar ve kayıp tahminlerini yapmak için farklı veri kaynakları ve modeller kullanarak bir yöntem sunmaktadır.
+
+- Jaiswal, K., & Wald, D. (2008). Developing empirical collapse fragility functions for global building types. Earthquake Spectra, 24(3), 731-739. [@jaiswal2008developing]
+
+Bu makalede, küresel bina türleri için deneysel çökme kırılganlık işlevleri geliştirilmektedir. Bu çalışma, depremden etkilenecek binaların hasar durumunu tahmin etmek için kullanılabilecek yöntemler sunmaktadır.
+
+- Porter, K. A., Jaiswal, K., Wald, D. J., Greene, M., & Comartin, C. (2008). WHE-PAGER project: A new initiative in estimating global building inventory and its seismic vulnerability. 14th World Conference on Earthquake Engineering. [@porter2008whe]
+
+Bu çalışmada, küresel bina envanterinin ve sismik kırılganlığının tahmin edilmesi için yeni bir girişim olan WHE-PAGER projesi tanıtılmaktadır. Bu proje, deprem hasar ve kayıp tahminlerini yapmak için kullanılabilecek bina envanteri ve kırılganlık verilerini sağlamaktadır.
+
+Proje kapsamında, deprem hasarlarını ve kayıplarını tahmin etmek için veri setini kullanarak analizler yapmayı amaçlıyorum. Veri analizi süreci şu adımları içerecektir:
+
+1. Veri ön işleme: Veri setindeki eksik değerlerin doldurulması, veri temizliği ve dönüşüm işlemleri.
+2. Keşifsel veri analizi: Veri setindeki değişkenlerin dağılımlarını, korelasyonlarını ve deprem hasar ve kayıpları üzerindeki etkilerini incelemek.
+3. Model geliştirme: Hasar ve kayıp tahminleri yapmak için farklı makine öğrenimi algoritmaları (örn. doğrusal regresyon, yapay sinir ağları, rastgele orman) kullanarak modeller geliştirmek.
+4. Model değerlendirme: Geliştirilen modellerin performanslarını kıyaslamak ve en iyi modeli seçmek.
+5. Sonuçlar ve yorumlar: Analiz ve tahmin sonuçlarını raporlamak ve yorumlamak. Türkiye'deki diğer şehirler için benzer tahminler yapılabilir ve afet yönetimi ve müdahale stratejilerinin planlanmasında kullanılabilir.
+
+# Veri 
+
+```{r, echo=FALSE}
+library(tidyverse)
+library(here)
+deprem <- read_csv2(here("deprem.csv")) 
+```
+```{r, echo=FALSE}
+library(xtable) 
+# devtools::install_github("emraher/summarytools")
+library(summarytools)
+st_options(lang = "tr")
+```
+```{r results='asis', echo=FALSE}
+deprem %>%
+  select(cok_agir_hasarli_bina_sayisi, 
+         agir_hasarli_bina_sayisi, "orta_hasarli_bina_sayisi", "hafif_hasarli_bina_sayisi",
+         "can_kaybi_sayisi", "agir_yarali_sayisi", "hastanede_tedavi_sayisi", 
+         "hafif_yarali_sayisi", "dogalgaz_boru_hasari", "icme_suyu_boru_hasari", 
+         "atik_su_boru_hasari", "gecici_barinma") %>% 
+  descr(stats = c("mean", "sd", "min", "med", "max"), transpose = TRUE) %>% 
+  xtable(caption = "Özet İstatistikler",
+         label = "tab:ozet",
+         align = c("l", "c", "c", "c", "c", "c")) %>% 
+  print(booktabs = TRUE, comment = FALSE, caption.placement = "top")
+```
+
+Deprem sonrasında en çok hasar gören binalar "hafif_hasarli_bina_sayisi" değişkeni ile temsil ediliyor. Ortalama olarak 314.42 bina hafif hasar almış. Bununla birlikte, "gecici_barinma" değişkeni, deprem sonrasında geçici barınmaya ihtiyaç duyan kişi sayısını gösteriyor ve ortalama olarak 871.66 kişi geçici barınma hizmetine ihtiyaç duymuş.
+
+Yaralanma ve can kaybı verilerine bakıldığında, deprem sonrası "can_kaybi_sayisi" ortalama 14.75 kişi olurken, "agir_yarali_sayisi" ortalama 8.44 kişi ve "hastanede_tedavi_sayisi" ortalama 41.33 kişi olarak gözlenmiş.
+
+Yapısal altyapı hasarlarına baktığımızda, en sık karşılaşılan hasar "atik_su_boru_hasari" olmuş ve ortalama 1.09 adet atık su borusu hasar görmüş. İçme suyu ve doğalgaz boruları ise daha az hasar görmüş gibi görünüyor, bu durum bu tür hizmetlerin binalara göre daha dayanıklı olabileceğini düşündürebilir.
+
+Tüm değişkenlerdeki standart sapma değerleri, verilerin ortalama etrafındaki dağılımını gösterir. Yüksek standart sapma değerleri, verinin ortalamadan daha fazla yayıldığını gösterirken, düşük standart sapma değerleri, verinin ortalamaya daha yakın olduğunu gösterir. Örneğin, "gecici_barinma" değişkenindeki yüksek standart sapma değeri (1195.26), deprem sonrası geçici barınmaya ihtiyaç duyan kişi sayısının önemli ölçüde değişkenlik gösterdiğini gösterir.
+
+Bu özet istatistikler, bize bir deprem sonrası hangi hasar türlerinin daha yaygın olduğu, can kaybı ve yaralanmaların ortalama seviyesi ve altyapı hasarlarının ortalama seviyesi hakkında genel bir bakış sağlar. Ayrıca, değişkenlerin dağılımının ne kadar değişken olduğunu gösteren standart sapma değerlerini içerir.
+
+
+
+# Yöntem ve Veri Analizi
+
+Öncelikle ulaşılması gereken temel bilgilerden can kaybı ile ilgili bir analizle başlanacaktır.
+
+Pearson methodu kullanılarak Bina Hasarı ile Can Kaybı arasındaki korelasyon incelenecektir.
+
+```{r, echo=FALSE}
+  cok_agir_hasarli_can_kaybi_korelasyon <- cor(deprem$cok_agir_hasarli_bina_sayisi, deprem$can_kaybi_sayisi, method = "pearson")
+agir_hasarli_can_kaybi_korelasyon <- cor(deprem$agir_hasarli_bina_sayisi, deprem$can_kaybi_sayisi, method = "pearson")
+orta_hasarli_can_kaybi_korelasyon <- cor(deprem$orta_hasarli_bina_sayisi, deprem$can_kaybi_sayisi, method = "pearson")
+hafif_hasarli_can_kaybi_korelasyon <- cor(deprem$hafif_hasarli_bina_sayisi, deprem$can_kaybi_sayisi, method = "pearson")
+
+
+cat("Çok ağır hasarlı bina sayısı ile can kaybı sayısı arasındaki korelasyon: ", cok_agir_hasarli_can_kaybi_korelasyon, "\n")
+cat("Ağır hasarlı bina sayısı ile can kaybı sayısı arasındaki korelasyon: ", agir_hasarli_can_kaybi_korelasyon, "\n")
+cat("Orta hasarlı bina sayısı ile can kaybı sayısı arasındaki korelasyon: ", orta_hasarli_can_kaybi_korelasyon, "\n")
+cat("Hafif hasarlı bina sayısı ile can kaybı sayısı arasındaki korelasyon: ", hafif_hasarli_can_kaybi_korelasyon, "\n")
+
+```
+
+Regresyon analizi ile Can Kaybı Sayısı tahmini yapılacaktır. 
+
+
+```{r, echo=FALSE}
+
+model <- lm(can_kaybi_sayisi ~ cok_agir_hasarli_bina_sayisi + agir_hasarli_bina_sayisi + orta_hasarli_bina_sayisi + hafif_hasarli_bina_sayisi, data = deprem)
+
+summary(model)
+
+
+library(ggplot2)
+
+
+deprem$tahminler <- predict(model, newdata = deprem)
+
+
+ggplot(deprem, aes(x=can_kaybi_sayisi, y=tahminler)) +
+  geom_point() +
+  geom_smooth(method=lm, se=FALSE, color="red") +
+  labs(x = "Gerçek Can Kaybı Sayısı", 
+       y = "Tahmini Can Kaybı Sayısı",
+       title = "Gerçek vs Tahmin - Çoklu Regresyon Modeli")
+
+```
+
+Bağımlı değişken olan "can kaybı sayısı" ile dört bağımsız değişken arasındaki ilişki araştırılmıştır: "çok ağır hasarlı bina sayısı", "ağır hasarlı bina sayısı", "orta hasarlı bina sayısı" ve "hafif hasarlı bina sayısı". Analiz sonuçlarına göre, dört bağımsız değişkenin hepsi can kaybı sayısı üzerinde anlamlı bir etkiye sahiptir ve modelin genel uyumunu ifade eden R-kare değeri 0.7443'tür. Bu değer, bağımsız değişkenlerin, can kaybı sayısındaki varyansın %74.43'ünü açıkladığını göstermektedir. Ayrıca, düzeltilmiş R-kare değeri 0.7432 olarak hesaplanmıştır ve F-istatistiği 694.2'dir, bu da modelin anlamlı olduğunu ve bağımsız değişkenlerin can kaybı sayısı üzerinde önemli bir etkiye sahip olduğunu göstermektedir (p-değeri < 2.2e-16).
+
+Regresyon katsayılarına göre, çok ağır hasarlı bina sayısı arttıkça, can kaybı sayısının da önemli ölçüde arttığı görülmektedir (katsayı = 2.192798, p-değeri < 2e-16). Ağır hasarlı bina sayısı arttıkça, can kaybı sayısının azaldığı gözlenmiştir (katsayı = -1.265866, p-değeri < 2e-16). Ortanca hasarlı bina sayısı arttıkça, can kaybı sayısında da bir artış olduğu tespit edilmiştir (katsayı = 0.256348, p-değeri = 1.85e-14). Son olarak, hafif hasarlı bina sayısının artmasıyla can kaybı sayısının azaldığı görülmüştür (katsayı = -0.020859, p-değeri = 0.012).
+
+Modelin artık hataları, gerçek değerler ile tahmin edilen değerler arasındaki farkları göstermektedir. Bu çalışmada, artık hataların minimum değeri -79.494, 1. çeyrek değeri -5.472, medyan değeri -0.189, 3. çeyrek değeri 2.951 ve maksimum değeri 97.122'dir.
+
+Sonuç olarak, bu regresyon analizi, depremle ilişkili bina hasarları üzerindeki çeşitli faktörlerin can kaybı sayısı üzerinde anlamlı bir etkiye sahip olduğunu ortaya koymaktadır. Bu nedenle, deprem risk yönetimi ve politikalarının, bina hasarlarının farklı türlerini dikkate alarak can kaybını azaltmaya yönelik önlemleri hedeflemesi önemlidir.
+
+# Sonuç
+
+Bu çalışmada, deprem verileri üzerinde yapılan analizlerle, deprem sonrası bina hasarları, can kaybı, yaralanmalar ve altyapı hasarları gibi çeşitli faktörler incelenmiştir. Özet istatistikler, deprem sonrası hasar türlerinin ve can kaybı ile yaralanmaların ortalamalarını göstermektedir. Ayrıca, korelasyon analizi ve regresyon analizi, bina hasarları ile can kaybı arasındaki ilişkiyi incelemek için kullanılmıştır.
+
+Elde edilen bulgular, deprem sonrasında en çok hasar gören binaların hafif hasarlı binalar olduğunu ve ortalama olarak 871.66 kişinin geçici barınmaya ihtiyaç duyduğunu göstermektedir. Can kaybı ve yaralanma verilerine göre, deprem sonrası ortalama can kaybı sayısı 14.75, ağır yaralı sayısı 8.44 ve hastanede tedavi sayısı 41.33'tür. Altyapı hasarlarında ise en sık karşılaşılan hasar atık su borusu hasarıdır.
+
+Regresyon analizi sonuçları, depremle ilişkili bina hasarlarının çeşitli faktörlerinin can kaybı sayısı üzerinde anlamlı bir etkiye sahip olduğunu göstermektedir. Bu nedenle, deprem risk yönetimi ve politikalarının, bina hasarlarının farklı türlerini dikkate alarak can kaybını azaltmaya yönelik önlemleri hedeflemesi önemlidir. Ayrıca, altyapı hasarları ve yaralanmaların azaltılması için de uygun önlemler alınmalıdır.
+
+Bu çalışma, deprem sonrası hasar türleri ve etkileri hakkında genel bir fikir edinmeye yardımcı olmakla birlikte, daha kapsamlı ve ayrıntılı analizlerin yapılması ile daha spesifik ve etkili önlemler önerilebilir. Gelecekteki çalışmalar, farklı deprem şiddetleri ve yerel koşullarla ilgili analizleri içerebilir ve buna göre 
+daha hedeflenmiş politikalar geliştirilebilir.
+
+\newpage
+# Kaynakça {#references}
+<div id="refs"></div>
